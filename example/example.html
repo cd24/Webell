@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <!-- MDL -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
+    <!-- Page info -->
+    <title>My Hasklettes Example Page</title>
+</head>
+
+<body class="col-md-12">
+    <h1 class="col-md-12">Welcome to the Hasklettes example site!</h1>
+    <p class="col-md-12">
+        This website will show off some of the rendering powers of hasklettes! It's a simple page, admittedly, play with it!
+    </p>
+    <h2 class="col-md-12">Custom Elements</h2>
+    <p class="col-md-12">
+        You can use custom HTML elements, as long as you provide some helper functions!
+    </p>
+    <hask>
+        divTag [bootstrap_column "md" 12]
+                [
+                    mdl_card "My Card Header" "Some Card Body" [],
+                    br,
+                    mdl_card "Second Card" "Second Card Body" [("My Action", "http://google.com")]
+                ]
+    </hask>
+    <br />
+    <h2 class="col-md-12">Select</h2>
+    <p class="col-md-12">
+        Hasklettes can help you quickly write otherwise unruly select statements. Simply pass it an array of options, and it will handle all the boiler plate for you!
+    </p>
+    <hask>
+        divTag [bootstrap_column "md" 12] [
+                                            select [bootstrap_column "md" 5] [ "First Option", "Second Option", "Third Option" ],
+                                            divTag [bootstrap_column "md" 2] [],
+                                            select [bootstrap_column "md" 5] [ "Fourth Option", "Fifth Option", "Sixth Option" ]
+                                          ]
+    </hask>
+    <br />
+    <h2 class="col-md-12">Tables</h2>
+    <hask>
+        table ([[1..10], [11..20], [21..30]] :: [[Int]]) [TO "border" "1", bootstrap_column "md" 8]
+    </hask>
+    <h1 class="col-md-12">Goodbye</h1>
+</body>
+
+</html>
