@@ -38,17 +38,26 @@ parseTagOption :: Parser TagOption
 parseTagOption = ignoreWhitespace (parseTO <|> parseLone)
 
 parseTagOptions :: Parser [TagOption]
-parseTagOptions = many parseTagOption
+parseTagOptions = (many parseTagOption) <|> pure []
 
 constructTag :: (HTML a) => String -> [TagOption] -> [Tag a] -> Tag a
 constructTag = Tag
 
--- parseTag :: Parser (Tag a)
-parseTag = char '<' *>
-                    readUntil ' ' <*>
-                    parseTagOptions <*>
-                    pure [] <*
-                    char '>'
+parseHask :: Parser (Tag String)
+parseHask = Hask <$> (parseOpen *>
+                     readUntil '<' <*
+                     parseClose)
+  
+parseTag :: HTML a => String -> Parser [Tag a] -> Parser (Tag a)
+parseTag name children = (Tag name) <$> parseTagOptions <*> children
+
+parseValue :: Parser (Tag String)
+parseValue = Value <$> readUntil '<'
+
+parseSelfClosing :: HTML a => Parser (Tag a)
+parseSelfClosing = char '<' *> (readUntil ' ' <|> readUntil '/') <*>
+                               parseTagOptions <*>
+                               (ignoreWhitespace parseString "/>")
 
 readUntil :: Char -> Parser String
 readUntil stop = Parser f where

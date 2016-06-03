@@ -21,6 +21,9 @@ module Webell where
         Lone :: String -> TagOption
         deriving Show
 
+    instance Show (Tag a) where
+        show = toHTML
+
 
     tagMeta :: TagOption -> String
     tagMeta (Lone left)    = printf "%s" left
