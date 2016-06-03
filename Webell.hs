@@ -10,7 +10,7 @@ module Webell where
     import Language.Haskell.Interpreter
 
     data Tag a where
-        --                          Tag       Options      Children
+        --                          Name       Options      Children
         Tag         :: (HTML a) => String -> [TagOption] -> [Tag a] -> Tag a
         SelfClosing :: (HTML a) => String -> [TagOption] -> Tag a
         Value       :: (HTML a) => a -> Tag a
@@ -32,7 +32,9 @@ module Webell where
     metaString :: [TagOption] -> String
     metaString = concatMap tagMeta
 
-    -- Make custom type class
+-- HTML was created to allow us to render the document using the recursive
+-- structure of Tag.  This acts very similarly to Show, but allows us to format
+-- html correctly.  
 
     class HTML a where
         toHTML :: a -> String

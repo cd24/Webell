@@ -6,6 +6,12 @@ import           Webell
 
 newtype Parser a = Parser { runParser :: String -> Maybe (a, String) }
 
+parseDomElement :: Parser (Tag a)
+parseDomElement = undefined --parseHask <|> parseSelfClosing <|> parseTag <|> parseValue
+
+parseDomElements :: Parser [Tag a]
+parseDomElements = many parseDomElement
+
 ignoreWhitespace :: Parser a -> Parser a
 ignoreWhitespace after = many ((char ' ' <|> char '\t') <|> char '\n') *> after
 
@@ -18,6 +24,12 @@ parseOpen = parseString "<hask>"
 parseClose :: Parser String
 parseClose = parseString "</hask>"
 
+parseTagOpen :: Parser Char
+parseTagOpen = char '<'
+
+parseTagClose :: Parser Char
+parseTagClose = char '>'
+
 parseBody :: Parser String
 parseBody = Parser f where
     f xs | null ns = Nothing
@@ -25,11 +37,20 @@ parseBody = Parser f where
          where (ns, remaining) = break isTag xs
 
 
-parseLone :: Parser TagOption
-parseLone = Parser f where
+parseLoneChar :: Char -> Parser TagOption
+parseLoneChar end = Parser f where
     f xs  | null op = Nothing
           | otherwise = Just (Lone op, remaining)
-          where (op, remaining) = readExcluding ' ' ['='] ("", xs)
+          where (op, remaining) = readExcluding end ['='] ("", xs)
+
+parseLoneSpaced :: Parser TagOption
+parseLoneSpaced = parseLoneChar ' '
+
+parseLoneClosed :: Parser TagOption
+parseLoneClosed = parseLoneChar '>'
+
+parseLone :: Parser TagOption
+parseLone = parseLoneSpaced <|> parseLoneClosed
 
 parseTO :: Parser TagOption
 parseTO = (\left _ right -> TO left right) <$> readUntil '=' <*> char '=' <*> (readUntil ' ' <|> readUntil '>')
@@ -38,26 +59,21 @@ parseTagOption :: Parser TagOption
 parseTagOption = ignoreWhitespace (parseTO <|> parseLone)
 
 parseTagOptions :: Parser [TagOption]
-parseTagOptions = (many parseTagOption) <|> pure []
-
-constructTag :: (HTML a) => String -> [TagOption] -> [Tag a] -> Tag a
-constructTag = Tag
+parseTagOptions = many parseTagOption <|> pure []
 
 parseHask :: Parser (Tag String)
 parseHask = Hask <$> (parseOpen *>
                      readUntil '<' <*
                      parseClose)
-  
-parseTag :: HTML a => String -> Parser [Tag a] -> Parser (Tag a)
-parseTag name children = (Tag name) <$> parseTagOptions <*> children
+
+parseTag :: HTML a => Parser (Tag a)
+parseTag = Tag <$> (parseTagOpen *> ignoreWhitespace (readUntil ' ')) <*> (parseTagOptions <* parseTagClose) <*> parseDomElements
 
 parseValue :: Parser (Tag String)
 parseValue = Value <$> readUntil '<'
 
 parseSelfClosing :: HTML a => Parser (Tag a)
-parseSelfClosing = char '<' *> (readUntil ' ' <|> readUntil '/') <*>
-                               parseTagOptions <*>
-                               (ignoreWhitespace parseString "/>")
+parseSelfClosing = SelfClosing <$> (parseTagOpen *> readUntil ' ') <*> parseTagOptions <* ignoreWhitespace (parseString "/>")
 
 readUntil :: Char -> Parser String
 readUntil stop = Parser f where
@@ -65,13 +81,12 @@ readUntil stop = Parser f where
          | otherwise = Just (left, remaining)
          where (left, remaining) = break (== stop) xs
 
-readExcluding :: Char -> [Char] -> (String, String) -> (String, String)
-readExcluding _ _ (_, [])                          = ([], [])
-readExcluding delim excludes (parsed, (current:input)) =
-              if elem current excludes then ([], [])
-              else ( if current == delim then (reverse parsed, input)
-                     else readExcluding delim excludes ((current:parsed), input)
-              )
+readExcluding :: Char -> String -> (String, String) -> (String, String)
+readExcluding _ _ (_, []) = ([], [])
+readExcluding delim excludes (parsed, current : input)
+                            | current `elem` excludes = ([], [])
+                            | current == delim = (reverse parsed, current:input)
+                            | otherwise = readExcluding delim excludes (current : parsed, input)
 
 
 --parseTag :: Parser (Tag String)
