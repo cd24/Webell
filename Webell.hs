@@ -14,16 +14,15 @@ module Webell where
         Tag         :: (HTML a) => String -> [TagOption] -> [Tag a] -> Tag a
         SelfClosing :: (HTML a) => String -> [TagOption] -> Tag a
         Value       :: (HTML a) => a -> Tag a
-        Hask        :: String -> Tag String
+        Hask        :: (HTML a) => String -> Tag a
 
     data TagOption where
         TO :: String -> String -> TagOption
         Lone :: String -> TagOption
         deriving Show
 
-    instance Show (Tag a) where
+    instance HTML a => Show (Tag a) where
         show = toHTML
-
 
     tagMeta :: TagOption -> String
     tagMeta (Lone left)    = printf "%s" left
@@ -34,7 +33,7 @@ module Webell where
 
 -- HTML was created to allow us to render the document using the recursive
 -- structure of Tag.  This acts very similarly to Show, but allows us to format
--- html correctly.  
+-- html correctly.
 
     class HTML a where
         toHTML :: a -> String
@@ -54,7 +53,6 @@ module Webell where
 
     instance HTML String where
         toHTML = id
-
 
     instance HTML (Either InterpreterError (Tag String)) where
       toHTML l = case l of

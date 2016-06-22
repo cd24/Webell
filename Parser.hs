@@ -6,8 +6,34 @@ import           Webell
 
 newtype Parser a = Parser { runParser :: String -> Maybe (a, String) }
 
+instance Functor Parser where
+   fmap f v = Parser g
+     where
+       g [] = Nothing
+       g xs = case runParser v xs of
+               Just l -> Just (first f l)
+               Nothing -> Nothing
+
+instance Applicative Parser where
+  pure l = Parser (\x -> Just (l, x))
+  p1 <*> p2 = Parser f
+      where
+        f xs = case runParser p1 xs of
+          Nothing -> Nothing
+          Just (l, rest) -> case runParser p2 rest of
+            Nothing -> Nothing
+            Just (a1, end) -> Just (l a1, end)
+
+instance Alternative Parser where
+  empty = Parser (const Nothing)
+  p1 <|> p2 = Parser f
+    where
+      f xs = case runParser p1 xs of
+        Just l -> Just l
+        Nothing -> runParser p2 xs
+
 parseDomElement :: Parser (Tag a)
-parseDomElement = undefined --parseHask <|> parseSelfClosing <|> parseTag <|> parseValue
+parseDomElement = parseHask <|> parseSelfClosing <|> parseTag <|> parseValue
 
 parseDomElements :: Parser [Tag a]
 parseDomElements = many parseDomElement
@@ -61,7 +87,7 @@ parseTagOption = ignoreWhitespace (parseTO <|> parseLone)
 parseTagOptions :: Parser [TagOption]
 parseTagOptions = many parseTagOption <|> pure []
 
-parseHask :: Parser (Tag String)
+parseHask :: (HTML a) => Parser (Tag a)
 parseHask = Hask <$> (parseOpen *>
                      readUntil '<' <*
                      parseClose)
@@ -87,13 +113,6 @@ readExcluding delim excludes (parsed, current : input)
                             | current `elem` excludes = ([], [])
                             | current == delim = (reverse parsed, current:input)
                             | otherwise = readExcluding delim excludes (current : parsed, input)
-
-
---parseTag :: Parser (Tag String)
---parseTag
-
---parseTag :: Parser (Tag String)
---parseTag = char '<' *> (parseTag <|> parseBody) <* char '>'
 
 isTag :: Char -> Bool
 isTag c = c == '<'
@@ -123,50 +142,3 @@ first f (fi, sitem) = (res, sitem) where
 second :: (b -> c) -> (a, b) -> (a, c)
 second f (fir, sitem) = (fir, res) where
                           res = f sitem
-
-instance Functor Parser where
-   fmap f v = Parser g
-     where
-       g [] = Nothing
-       g xs = case runParser v xs of
-               Just l -> Just (first f l)
-               Nothing -> Nothing
-
-instance Applicative Parser where
-  pure l = Parser (\x -> Just (l, x))
-  p1 <*> p2 = Parser f
-      where
-        f xs = case runParser p1 xs of
-          Nothing -> Nothing
-          Just (l, rest) -> case runParser p2 rest of
-            Nothing -> Nothing
-            Just (a1, end) -> Just (l a1, end)
-
-abParser :: Parser (Char, Char)
-abParser = (,) <$> char 'a' <*> char 'b'
-
-abParser_ :: Parser ()
-abParser_ =  c2 <$> char 'a' <*> char 'b'
-
-c2 :: a -> a -> ()
-c2 _ _ = ()
-
-intPair :: Parser [Integer]
-intPair = c4 <$> (c3 <$> posInt <*> char ' ') <*> posInt
-
-c3 :: Integer -> Char -> Integer
-c3 l _ = l
-
-c4 :: Integer -> Integer -> [Integer]
-c4 l b = [l, b]
-
-instance Alternative Parser where
-  empty = Parser (const Nothing)
-  p1 <|> p2 = Parser f
-    where
-      f xs = case runParser p1 xs of
-        Just l -> Just l
-        Nothing -> runParser p2 xs
-
-intOrUppercase :: Parser ()
-intOrUppercase = void posInt <|> void (satisfy isUpper)
