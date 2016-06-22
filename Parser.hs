@@ -33,7 +33,7 @@ instance Alternative Parser where
         Nothing -> runParser p2 xs
 
 parseDomElement :: Parser (Tag a)
-parseDomElement = parseHask <|> parseSelfClosing <|> parseTag <|> parseValue
+parseDomElement = undefined -- parseHask <|> parseSelfClosing <|> parseTag <|> parseValue
 
 parseDomElements :: Parser [Tag a]
 parseDomElements = many parseDomElement
